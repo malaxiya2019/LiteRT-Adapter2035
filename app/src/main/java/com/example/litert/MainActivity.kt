@@ -15,7 +15,7 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-// --- 数据模型定义 (只在这里定义一次) ---
+// --- 核心模型：确保这里没有重复定义 ---
 @Serializable
 data class ChatRequest(val model: String? = null, val messages: List<Message>)
 
@@ -37,26 +37,26 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         val textView = TextView(this).apply {
-            text = "LiteRT Adapter 运行中...\n端口: 8080\n模型: Gemma 4"
-            textSize = 18f
-            setPadding(40, 40, 40, 40)
+            text = "LiteRT Adapter 2026\nStatus: Running on Port 8080\nDevice: nubia Flip"
+            textSize = 16f
+            setPadding(48, 48, 48, 48)
         }
         setContentView(textView)
 
-        // 1. 初始化本地推理引擎
+        // 初始化推理引擎
         llmRunner = LlmRunner(this)
         llmRunner.init()
 
-        // 2. 启动 API 服务
+        // 启动 API
         startServer()
     }
 
     private fun startServer() {
+        // 使用标准的 Ktor 2.x 结构
         server = embeddedServer(Netty, port = 8080) {
             install(ContentNegotiation) {
                 json(Json { 
                     ignoreUnknownKeys = true 
-                    prettyPrint = true
                 })
             }
             routing {
@@ -65,7 +65,7 @@ class MainActivity : AppCompatActivity() {
                         val request = call.receive<ChatRequest>()
                         val prompt = request.messages.lastOrNull()?.content ?: ""
                         
-                        // 执行推理
+                        // 执行同步推理
                         val answer = llmRunner.generateSync(prompt)
                         
                         val response = ChatResponse(
@@ -73,7 +73,7 @@ class MainActivity : AppCompatActivity() {
                         )
                         call.respond(response)
                     } catch (e: Exception) {
-                        call.respondText("Error: ${e.message}")
+                        call.respondText("Infer Error: \${e.message}")
                     }
                 }
             }
@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        server?.stop(1000, 2000)
+        server?.stop(500, 1000)
         llmRunner.close()
     }
 }
