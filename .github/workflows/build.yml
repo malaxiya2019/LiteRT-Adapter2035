@@ -32,9 +32,29 @@ jobs:
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug --stacktrace
-
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
-        path: app/build/outputs/apk/debug/*.apk
+        path: app/build/outputs/apk/debug/*.
+apk
+steps:
+  # 1. 检出代码
+  - name: Checkout
+    uses: actions/checkout@v4
+
+  # 🔥 2. Debug gradlew（你要加的）
+  - name: Debug gradlew content
+    run: |
+      echo "=== gradlew content ==="
+      cat gradlew
+      echo "=== file type ==="
+      file gradlew
+
+  # 3. 设置 Java 环境
+  - name: Set up JDK 17
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: 17
+      cache: gradle
