@@ -1,8 +1,8 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    // 必须：用于解析 OpenClaw 发来的 JSON 数据
-    id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.22'
+    // 必须：版本已在根目录定义，这里不需要写 version
+    id 'org.jetbrains.kotlin.plugin.serialization' 
 }
 
 android {
@@ -19,12 +19,11 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // --- 核心配置：防止 Gemma 模型被压缩 ---
+    // --- 核心：防止 Gemma 模型被压缩，否则 LiteRT 加载会报错 ---
     androidResources {
         noCompress 'litertlm', 'tflite'
     }
     
-    // 兼容性配置（建议保留）
     aaptOptions {
         noCompress "litertlm", "tflite"
     }
@@ -54,7 +53,7 @@ android {
 }
 
 dependencies {
-    // 基础库
+    // 基础库（版本建议与 Kotlin 插件 1.9.22 匹配）
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
     implementation "androidx.appcompat:appcompat:1.6.1"
     implementation "com.google.android.material:material:1.11.0"
@@ -62,21 +61,20 @@ dependencies {
     implementation "androidx.core:core-ktx:1.12.0"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"
 
-    // --- Google AI Edge (LiteRT) 推理引擎 ---
+    // --- Google AI Edge (LiteRT) 核心 ---
     implementation 'com.google.ai.edge.litert:litert-genai:1.2.0'
     
-    // --- Ktor 本地服务端 (为 OpenClaw 提供 API) ---
+    // --- Ktor 本地服务端 (OpenAI 协议中转) ---
     def ktor_version = "2.3.10"
     implementation "io.ktor:ktor-server-core:$ktor_version"
     implementation "io.ktor:ktor-server-netty:$ktor_version"
     implementation "io.ktor:ktor-server-content-negotiation:$ktor_version"
     implementation "io.ktor:ktor-serialization-kotlinx-json:$ktor_version"
     
-    // 协程与异步支持
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0"
     
-    // 单元测试
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
+
