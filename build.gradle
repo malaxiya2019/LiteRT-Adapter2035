@@ -1,35 +1,23 @@
-// 1. 所有的插件路径和版本必须合并在这里，且放在文件最开头
 buildscript {
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        // 核心：Android 编译插件
         classpath 'com.android.tools.build:gradle:8.2.2'
-        // 核心：Kotlin 插件 (保持版本一致)
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22"
-        // 必须：用于 Ktor 的 JSON 序列化插件
         classpath "org.jetbrains.kotlin:kotlin-serialization:1.9.22"
     }
 }
 
-// 2. 所有模块通用的仓库配置
 allprojects {
     repositories {
-        google()
+        google()            // 必须在第一位
         mavenCentral()
-    }
-    
-    // 统一配置 Kotlin 编译目标，避免每个模块单独去写
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        kotlinOptions {
-            jvmTarget = "17"
-        }
+        maven { url "https://maven.google.com" } // 强制指向 Google Maven
     }
 }
 
-// 3. 清理任务
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
