@@ -18,11 +18,15 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
-        # 开启缓存功能，能显著提升后续构建速度
         cache: 'gradle'
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+    - name: Grant execute permission
+      run: |
+        chmod +x gradlew
+        # 确保整个 wrapper 目录都有执行权限
+        chmod -R +x gradle/wrapper/
+        # 打印一下权限状态（可选，用于调试）
+        ls -l gradlew gradle/wrapper/gradle-wrapper.jar
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug
@@ -31,5 +35,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
-        # 注意：如果你的模块名不是 app，请修改下方的路径
         path: app/build/outputs/apk/debug/*.apk
