@@ -1,1 +1,22 @@
-#
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace "com.example.litert"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.litert"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
+    implementation "androidx.appcompat:appcompat:1.6.1"
+}
