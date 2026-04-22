@@ -1,7 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    // 如果你使用了 Kotlin 序列化（用于解析 JSON），需要加上这行
+    // 必须：用于解析 OpenClaw 发来的 JSON 数据
     id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.22'
 }
 
@@ -19,13 +19,24 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // --- 关键配置：防止模型被压缩 ---
+    // --- 核心配置：防止 Gemma 模型被压缩 ---
     androidResources {
         noCompress 'litertlm', 'tflite'
     }
-    // 兼容旧版 gradle 的写法（建议都加上）
+    
+    // 兼容性配置（建议保留）
     aaptOptions {
         noCompress "litertlm", "tflite"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            debuggable true
+        }
     }
 
     compileOptions {
@@ -38,91 +49,34 @@ android {
     }
 
     buildFeatures {
-        viewBinding true // 方便你在 MainActivity 更新 UI
+        viewBinding true
     }
 }
 
 dependencies {
+    // 基础库
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
     implementation "androidx.appcompat:appcompat:1.6.1"
+    implementation "com.google.android.material:material:1.11.0"
+    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
     implementation "androidx.core:core-ktx:1.12.0"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"
 
-    // --- LiteRT (Google AI Edge) 核心依赖 ---
+    // --- Google AI Edge (LiteRT) 推理引擎 ---
     implementation 'com.google.ai.edge.litert:litert-genai:1.2.0'
     
-    // --- Ktor 服务端依赖 (用于给 OpenClaw 提供 HTTP 接口) ---
+    // --- Ktor 本地服务端 (为 OpenClaw 提供 API) ---
     def ktor_version = "2.3.10"
     implementation "io.ktor:ktor-server-core:$ktor_version"
     implementation "io.ktor:ktor-server-netty:$ktor_version"
     implementation "io.ktor:ktor-server-content-negotiation:$ktor_version"
     implementation "io.ktor:ktor-serialization-kotlinx-json:$ktor_version"
     
-    // 协程支持
+    // 协程与异步支持
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0"
-}
-plugins {
-    id 'com.android.application'
-    id 'org.jetbraiplugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-}
-
-android {
-    namespace "com.example.litert"
-    compileSdk 34
-
-    defaultConfig {
-        applicationId "com.example.litert"
-        minSdk 26
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-        debug {
-            debuggable true
-        }
-    }
-}
-
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.3.0"  // 更新为与 Kotlin 插件匹配的版本
-    implementation "androidx.appcompat:appcompat:1.6.1"
-    implementation "com.google.android.material:material:1.11.0"
-    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
-    implementation "androidx.core:core-ktx:1.12.0"
-}ns.kotlin.android'
-}
-
-android {
-    namespace "com.example.litert"
-    compileSdk 34
-
-    defaultConfig {
-        applicationId "com.example.litert"
-        minSdk 26
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
-    }
-}
-
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
-    implementation "androidx.appcompat:appcompat:1.6.1"
+    
+    // 单元测试
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
