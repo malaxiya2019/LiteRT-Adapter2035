@@ -1,54 +1,61 @@
 package com.example.litert
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
-import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import com.google.mediapipe.tasks.genai.llm.LlmInference
+import com.google.mediapipe.tasks.genai.llm.LlmInferenceOptions
+import kotlinx.coroutines.*
 import java.io.File
 
 class LlmRunner(private val context: Context) {
 
-    private var llmInference: LlmInference? = null
+    private var llm: LlmInference? = null
 
-    fun init() {
-        val modelPath = "/sdcard/Download/gemma-4-E2B-it.litertlm"
-        val file = File(modelPath)
+    companion object {
+        private const val TAG = "LlmRunner"
 
-        if (!file.exists()) {
-            Log.e("LlmRunner", "模型文件不存在: \$modelPath")
-            return
-        }
+        // 👉 你的模型路径（重点）
+        private const val MODEL_PATH = "/sdcard/Download/model.litertlm"
+    }
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // =========================
+    // ✅ 初始化
+    // =========================
+    suspend fun init() = withContext(Dispatchers.IO) {
         try {
-            // 使用适配 0.10.x 的 BaseOptions 写法
-            val options = LlmInference.LlmInferenceOptions.builder()
-                .setBaseOptions(
-                    com.google.mediapipe.tasks.core.BaseOptions.builder()
-                        .setModelFilePath(modelPath)
-                        .build()
-                )
-                .setMaxTokens(1024)
-                .setTemperature(0.7f)
-                .setTopK(40)
+            val file = File(MODEL_PATH)
+
+            if (!file.exists()) {
+                Log.e(TAG, "模型不存在: $MODEL_PATH")
+                return@withContext
+            }
+
+            Log.d(TAG, "模型路径: ${file.absolutePath}")
+            Log.d(TAG, "模型大小: ${file.length() / (1024 * 1024)} MB")
+
+            val options = LlmInferenceOptions.builder()
+                .setModelPath(file.absolutePath)
+                .setMaxTokens(512)
                 .build()
 
-            llmInference = LlmInference.createFromOptions(context, options)
-            Log.i("LlmRunner", "模型加载成功")
+            llm = LlmInference.createFromOptions(context, options)
+
+            Log.d(TAG, "LLM 初始化成功")
+
         } catch (e: Exception) {
-            Log.e("LlmRunner", "初始化失败: \${e.message}")
+            Log.e(TAG, "LLM 初始化失败", e)
         }
     }
 
-    fun generateSync(prompt: String): String {
-        val formattedPrompt = "<start_of_turn>user\n\$prompt<end_of_turn>\n<start_of_turn>model\n"
-        return try {
-            llmInference?.generateResponse(formattedPrompt) ?: "模型未就绪"
+    // =========================
+    // ✅ 普通生成
+    // =========================
+    suspend fun generate(prompt: String): String = withContext(Dispatchers.IO) {
+        try {
+            val instance = llm ?: return@withContext "模型未初始化"
+            instance.generateResponse(prompt)
         } catch (e: Exception) {
-            "推理错误: \${e.message}"
-        }
-    }
-
-    fun close() {
-        llmInference?.close()
-        llmInference = null
-    }
-}
+            Log.e(TAG, "生成
