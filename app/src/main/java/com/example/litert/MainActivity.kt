@@ -3,30 +3,13 @@ package com.example.litert
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.*
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-
-// --- 核心模型：确保这里没有重复定义 ---
-@Serializable
-data class ChatRequest(val model: String? = null, val messages: List<Message>)
-
-@Serializable
-data class Message(val role: String, val content: String)
-
-@Serializable
-data class ChatResponse(val choices: List<Choice>)
-
-@Serializable
-data class Choice(val message: Message)
 
 class MainActivity : AppCompatActivity() {
 
@@ -37,43 +20,42 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         val textView = TextView(this).apply {
-            text = "LiteRT Adapter 2026\nStatus: Running on Port 8080\nDevice: nubia Flip"
+            text = "LiteRT Adapter 正在运行\n端口: 8080"
             textSize = 16f
             setPadding(48, 48, 48, 48)
         }
         setContentView(textView)
 
-        // 初始化推理引擎
+        // 关键：在这里初始化 LlmRunner
         llmRunner = LlmRunner(this)
         llmRunner.init()
 
-        // 启动 API
         startServer()
     }
 
     private fun startServer() {
-        // 使用标准的 Ktor 2.x 结构
         server = embeddedServer(Netty, port = 8080) {
-            install(ContentNegotiation) {
-                json(Json { 
-                    ignoreUnknownKeys = true 
-                })
-            }
             routing {
                 post("/v1/chat/completions") {
                     try {
-                        val request = call.receive<ChatRequest>()
-                        val prompt = request.messages.lastOrNull()?.content ?: ""
+                        val body = call.receiveText()
+                        val prompt = if (body.contains("\"content\":\"")) {
+                            body.substringAfter("\"content\":\"").substringBefore("\"")
+                        } else "Hello"
                         
-                        // 执行同步推理
                         val answer = llmRunner.generateSync(prompt)
                         
-                        val response = ChatResponse(
-                            choices = listOf(Choice(Message("assistant", answer)))
-                        )
-                        call.respond(response)
+                        val jsonResponse = """
+                            {
+                              "choices": [{
+                                "message": { "role": "assistant", "content": "$answer" }
+                              }]
+                            }
+                        """.trimIndent()
+                        
+                        call.respondText(jsonResponse, io.ktor.http.ContentType.Application.Json)
                     } catch (e: Exception) {
-                        call.respondText("Infer Error: \${e.message}")
+                        call.respondText("Error: \${e.message}")
                     }
                 }
             }
