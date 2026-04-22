@@ -14,11 +14,23 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // 关键：防止模型被压缩导致无法读取
+    // --- 核心：防止模型被压缩，否则推理引擎加载会报错 ---
     androidResources {
         noCompress 'litertlm', 'tflite', 'bin'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            debuggable true
+        }
     }
 
     compileOptions {
@@ -29,20 +41,35 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    buildFeatures {
+        viewBinding true
+    }
 }
 
 dependencies {
+    // 基础支持库 (必须包含这些以支持主题)
     implementation "androidx.appcompat:appcompat:1.6.1"
+    implementation "com.google.android.material:material:1.11.0" // 核心：解决 Theme.MaterialComponents 找不到的问题
+    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
     implementation "androidx.core:core-ktx:1.12.0"
 
-    // 核心依赖：MediaPipe GenAI (稳定版)
+    // --- MediaPipe GenAI (LiteRT 推理引擎) ---
+    // 使用 0.10.11 稳定版
     implementation 'com.google.mediapipe:tasks-genai:0.10.11'
     
-    // Ktor 服务端 (用于对接 OpenClaw)
+    // --- Ktor 本地服务端 (为 OpenClaw 提供 API) ---
     def ktor_version = "2.3.10"
     implementation "io.ktor:ktor-server-core:$ktor_version"
     implementation "io.ktor:ktor-server-netty:$ktor_version"
     implementation "io.ktor:ktor-server-content-negotiation:$ktor_version"
     implementation "io.ktor:ktor-serialization-kotlinx-json:$ktor_version"
+    
+    // 协程支持
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0"
+    
+    // 单元测试
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
