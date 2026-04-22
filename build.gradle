@@ -12,9 +12,13 @@ buildscript {
 
 allprojects {
     repositories {
-        google()            // 必须在第一位
+        google()
         mavenCentral()
-        maven { url "https://maven.google.com" } // 强制指向 Google Maven
+        maven { url "https://maven.google.com" }
+    }
+    // 强制所有模块使用相同的编译版本
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions { jvmTarget = "17" }
     }
 }
 
