@@ -19,58 +19,20 @@ jobs:
         distribution: temurin
         java-version: 17
 
-    - name: Create Gradle Wrapper 8.2
+    # 🔥 直接安装并使用 Gradle 8.2（完全绕过 wrapper）
+    - name: Setup Gradle 8.2
       run: |
-        mkdir -p gradle/wrapper
+        echo "=== Downloading Gradle 8.2 ==="
+        wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
+        unzip -q gradle-8.2-bin.zip
+        echo "=== Adding Gradle to PATH ==="
+        echo "$(pwd)/gradle-8.2/bin" >> $GITHUB_PATH
         
-        # 方法1：从 Gradle GitHub 仓库下载原始 wrapper JAR
-        echo "=== Downloading official gradle-wrapper.jar ==="
-        curl -L https://github.com/gradle/gradle/raw/v8.2.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
-        
-        # 验证下载是否成功
-        if [ ! -f gradle/wrapper/gradle-wrapper.jar ] || [ $(stat -c%s gradle/wrapper/gradle-wrapper.jar) -lt 10000 ]; then
-          echo "=== Failed, trying alternative source ==="
-          # 方法2：从 Gradle 8.2 distribution 提取
-          curl -L https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
-          unzip -q /tmp/gradle.zip -d /tmp/
-          find /tmp/gradle-8.2 -name "gradle-wrapper*.jar" -exec cp {} gradle/wrapper/gradle-wrapper.jar \;
-        fi
-        
-        echo "=== JAR info ==="
-        ls -lh gradle/wrapper/gradle-wrapper.jar
-        file gradle/wrapper/gradle-wrapper.jar
-        
-        echo "=== Checking manifest ==="
-        unzip -p gradle/wrapper/gradle-wrapper.jar META-INF/MANIFEST.MF | grep -i "main-class" || echo "No Main-Class found, trying another source..."
-        
-        # 如果还是不行，直接创建一个可用的 wrapper
-        if ! unzip -p gradle/wrapper/gradle-wrapper.jar META-INF/MANIFEST.MF | grep -q "Main-Class"; then
-          echo "=== Creating custom wrapper JAR ==="
-          # 下载已知可用的旧版本 wrapper，它也能拉取 Gradle 8.2
-          curl -L https://raw.githubusercontent.com/gradle/gradle/v7.6.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
-        fi
-        
-        # 创建配置文件（指定使用 Gradle 8.2）
-        cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-        distributionBase=GRADLE_USER_HOME
-        distributionPath=wrapper/dists
-        distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
-        zipStoreBase=GRADLE_USER_HOME
-        zipStorePath=wrapper/dists
-        EOF
-        
-        # 创建 gradlew 脚本
-        cat > gradlew << 'EOF'
-        #!/usr/bin/env sh
-        exec java -jar "$(dirname "$0")/gradle/wrapper/gradle-wrapper.jar" "$@"
-        EOF
-        chmod +x gradlew
-        
-        echo "=== Testing wrapper ==="
-        ./gradlew --version
+        # 验证
+        gradle --version
 
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --stacktrace
+      run: gradle assembleDebug --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v5
