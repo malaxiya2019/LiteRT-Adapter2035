@@ -1,3 +1,28 @@
+// 根目录 build.gradle
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // 确保 AGP 版本与你的 Gradle 8.2 兼容
+        classpath 'com.android.tools.build:gradle:8.2.2'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22"
+        // 序列化插件（Ktor 解析 JSON 必需）
+        classpath "org.jetbrains.kotlin:kotlin-serialization:1.9.22"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
 buildscript {
     repositories {
         google()
