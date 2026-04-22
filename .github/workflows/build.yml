@@ -19,21 +19,34 @@ jobs:
         distribution: temurin
         java-version: 17
 
-    # 🔥 重新生成完整的 Gradle Wrapper
-    - name: Regenerate Gradle Wrapper
+    # 🔥 直接创建正确版本的 Gradle Wrapper
+    - name: Create Gradle Wrapper 8.2
       run: |
-        echo "=== Installing Gradle ==="
-        sudo apt-get update
-        sudo apt-get install -y gradle
+        echo "=== Creating gradle/wrapper directory ==="
+        mkdir -p gradle/wrapper
         
-        echo "=== Generating wrapper with Gradle 8.2 ==="
-        gradle wrapper --gradle-version 8.2
+        echo "=== Downloading gradle-wrapper.jar (v8.2) ==="
+        curl -L https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
         
-        echo "=== Setting permissions ==="
+        echo "=== Creating gradle-wrapper.properties for Gradle 8.2 ==="
+        cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+        distributionBase=GRADLE_USER_HOME
+        distributionPath=wrapper/dists
+        distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
+        zipStoreBase=GRADLE_USER_HOME
+        zipStorePath=wrapper/dists
+        EOF
+        
+        echo "=== Creating gradlew script ==="
+        cat > gradlew << 'EOF'
+        #!/usr/bin/env sh
+        exec java -jar "$(dirname "$0")/gradle/wrapper/gradle-wrapper.jar" "$@"
+        EOF
         chmod +x gradlew
         
         echo "=== Verifying wrapper ==="
         ls -la gradle/wrapper/
+        echo "=== Gradle wrapper version ==="
         ./gradlew --version
 
     - name: Build Debug APK
