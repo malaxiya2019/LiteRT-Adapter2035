@@ -1,23 +1,25 @@
+package com.example.litert
+
+import android.content.Context
+import android.util.Log
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import java.io.File
+
+class LlmRunner(private val context: Context) {
+
+    private var llmInference: LlmInference? = null
+
     fun init() {
         val modelPath = "/sdcard/Download/gemma-4-E2B-it.litertlm"
         val file = File(modelPath)
 
         if (!file.exists()) {
-            android.util.Log.e("LlmRunner", "找不到模型文件")
+            Log.e("LlmRunner", "模型文件不存在: \$modelPath")
             return
         }
 
         try {
-            // --- 核心修复：改用 BaseOptions 设置路径 ---
-            val options = LlmInference.LlmInferenceOptions.builder()
-                .setModelFilePath(modelPath) // 如果直接设置报错，请尝试下方替换方案
-                .setMaxTokens(1024)
-                .setTemperature(0.7f)
-                .setTopK(40)
-                .build()
-            
-            // 如果上述依然报 setModelFilePath 错误，请彻底替换为下面这几行：
-            /*
+            // 使用适配 0.10.x 的 BaseOptions 写法
             val options = LlmInference.LlmInferenceOptions.builder()
                 .setBaseOptions(
                     com.google.mediapipe.tasks.core.BaseOptions.builder()
@@ -28,11 +30,25 @@
                 .setTemperature(0.7f)
                 .setTopK(40)
                 .build()
-            */
 
             llmInference = LlmInference.createFromOptions(context, options)
-            android.util.Log.i("LlmRunner", "加载成功")
+            Log.i("LlmRunner", "模型加载成功")
         } catch (e: Exception) {
-            android.util.Log.e("LlmRunner", "初始化失败: \${e.message}")
+            Log.e("LlmRunner", "初始化失败: \${e.message}")
         }
     }
+
+    fun generateSync(prompt: String): String {
+        val formattedPrompt = "<start_of_turn>user\n\$prompt<end_of_turn>\n<start_of_turn>model\n"
+        return try {
+            llmInference?.generateResponse(formattedPrompt) ?: "模型未就绪"
+        } catch (e: Exception) {
+            "推理错误: \${e.message}"
+        }
+    }
+
+    fun close() {
+        llmInference?.close()
+        llmInference = null
+    }
+}
