@@ -15,8 +15,9 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+// --- 数据模型定义 (只在这里定义一次) ---
 @Serializable
-data class ChatRequest(val model: String, val messages: List<Message>)
+data class ChatRequest(val model: String? = null, val messages: List<Message>)
 
 @Serializable
 data class Message(val role: String, val content: String)
@@ -30,44 +31,49 @@ data class Choice(val message: Message)
 class MainActivity : AppCompatActivity() {
 
     private lateinit var llmRunner: LlmRunner
-    private val scope = CoroutineScope(Dispatchers.Main + Job())
+    private var server: NettyApplicationEngine? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // 创建一个简单的布局显示状态
-        val textView = TextView(this)
-        textView.text = "LiteRT Adapter 正在启动...\n端口: 8080"
+        val textView = TextView(this).apply {
+            text = "LiteRT Adapter 运行中...\n端口: 8080\n模型: Gemma 4"
+            textSize = 18f
+            setPadding(40, 40, 40, 40)
+        }
         setContentView(textView)
 
-        // 1. 初始化推理引擎
+        // 1. 初始化本地推理引擎
         llmRunner = LlmRunner(this)
         llmRunner.init()
 
-        // 2. 启动 Ktor 本地服务
+        // 2. 启动 API 服务
         startServer()
     }
 
     private fun startServer() {
-        embeddedServer(Netty, port = 8080) {
+        server = embeddedServer(Netty, port = 8080) {
             install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
+                json(Json { 
+                    ignoreUnknownKeys = true 
+                    prettyPrint = true
+                })
             }
             routing {
                 post("/v1/chat/completions") {
                     try {
                         val request = call.receive<ChatRequest>()
-                        val userPrompt = request.messages.lastOrNull()?.content ?: ""
+                        val prompt = request.messages.lastOrNull()?.content ?: ""
                         
-                        // 调用刚才修好的推理方法
-                        val result = llmRunner.generateSync(userPrompt)
+                        // 执行推理
+                        val answer = llmRunner.generateSync(prompt)
                         
                         val response = ChatResponse(
-                            choices = listOf(Choice(Message("assistant", result)))
+                            choices = listOf(Choice(Message("assistant", answer)))
                         )
                         call.respond(response)
                     } catch (e: Exception) {
-                        call.respondText("Server Error: ${e.message}")
+                        call.respondText("Error: ${e.message}")
                     }
                 }
             }
@@ -76,7 +82,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        server?.stop(1000, 2000)
         llmRunner.close()
-        scope.cancel()
     }
 }
