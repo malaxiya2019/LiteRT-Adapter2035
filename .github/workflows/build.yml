@@ -12,6 +12,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ✅ JDK
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # ❗关键：先安装 Gradle（不是用 wrapper）
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      # ❗关键：生成 wrapper（解决你现在的问题）
+      - name: Generate Gradle Wrapper
+        run: gradle wrapper --gradle-version 8.2
+
+      # 再用 wrapper 构建
+      - name: Build APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: app/build/outputs/apk/debug/*.apk: Build LiteRT APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
