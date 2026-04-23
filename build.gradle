@@ -1,4 +1,8 @@
 buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.2.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22"
@@ -6,7 +10,7 @@ buildscript {
     }
 }
 
-// ✅ 统一 Kotlin JVM 版本
+// Kotlin 统一版本
 subprojects {
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
@@ -15,7 +19,7 @@ subprojects {
     }
 }
 
-// ✅ clean 任务
+// clean
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
