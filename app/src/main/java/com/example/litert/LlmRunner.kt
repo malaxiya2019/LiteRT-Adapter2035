@@ -58,4 +58,58 @@ class LlmRunner(private val context: Context) {
             val instance = llm ?: return@withContext "模型未初始化"
             instance.generateResponse(prompt)
         } catch (e: Exception) {
-            Log.e(TAG, "生成
+            Log.e(TAG, "生成失败", e)
+            "生成失败: ${e.message}"
+        }
+    }
+
+    // =========================
+    // 🚀 Streaming
+    // =========================
+    fun generateStream(
+        prompt: String,
+        onToken: (String) -> Unit,
+        onComplete: (String) -> Unit,
+        onError: (Throwable) -> Unit
+    ) {
+        val instance = llm
+        if (instance == null) {
+            onError(IllegalStateException("模型未初始化"))
+            return
+        }
+
+        scope.launch {
+            val fullText = StringBuilder()
+
+            try {
+                instance.generateResponseAsync(
+                    prompt,
+                    { partial ->
+                        fullText.append(partial)
+                        onToken(partial)
+                    },
+                    {
+                        onComplete(fullText.toString())
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Streaming 失败", e)
+                onError(e)
+            }
+        }
+    }
+
+    // =========================
+    // 🧹 释放
+    // =========================
+    fun close() {
+        try {
+            llm?.close()
+            llm = null
+            scope.cancel()
+            Log.d(TAG, "LLM 已释放")
+        } catch (e: Exception) {
+            Log.e(TAG, "释放失败", e)
+        }
+    }
+}
