@@ -49,6 +49,7 @@ android {
 
 dependencies {
     // 基础支持库 (必须包含这些以支持主题)
+    implementation 'com.google.mediapipe:tasks-genai:0.10.11'
     implementation "androidx.appcompat:appcompat:1.6.1"
     implementation "com.google.android.material:material:1.11.0" // 核心：解决 Theme.MaterialComponents 找不到的问题
     implementation "androidx.constraintlayout:constraintlayout:2.1.4"
